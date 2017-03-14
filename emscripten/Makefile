@@ -27,9 +27,9 @@ LINK		= $(CC)
 LDFLAGS	= --pre-js termlib.js $(LIBCURSES)
 LIBCURSES	= libpdcurses.a
 
-# testcurs.html fails to build and tuidemo.html fails to run
+# tuidemo.html fails to run
 DEMOS		= firework.html newdemo.html ptest.html rain.html \
-			  worm.html xmas.html
+			  testcurs.html worm.html xmas.html
 DEMOFLAGS	= $(CFLAGS) --shell-file template.html \
 			  -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1
 
