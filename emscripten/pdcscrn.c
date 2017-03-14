@@ -160,8 +160,9 @@ int PDC_color_content(short color, short *red, short *green, short *blue)
     char str[8];
     int r, g, b;
 
-    asm("TermGlobals.getColorString(%0);"
-       :"=r"(str) :"r"(color));
+    EM_ASM_({
+        stringToUTF8(TermGlobals.getColorString($0), $1, 8);
+    }, color, str);
     sscanf(str, "#%02x%02x%02x", &r, &g, &b);
 
     *red = DIVROUND(r * 1000, 255);
@@ -180,8 +181,9 @@ int PDC_init_color(short color, short red, short green, short blue)
     int b = DIVROUND(blue * 255, 1000);
 
     sprintf(str, "#%02x%02x%02x", r, g, b);
-    asm("TermGlobals.setColor(%0, %1);"
-       ::"r"(color), "r"(str));
+    EM_ASM_({
+        TermGlobals.setColor($0, Pointer_stringify($1, 7));
+    }, color, str);
 
     wrefresh(curscr);
 
