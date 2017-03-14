@@ -60,9 +60,8 @@ $(LIBOBJS) : %.o: $(srcdir)/%.c
 $(PDCOBJS) : %.o: $(osdir)/%.c
 	$(BUILD) $(SFLAGS) -c $<
 
-firework.html: firework.c
-	$(CC) -I.. $(DEMOFLAGS) \
-	      -o $@ $< $(LDFLAGS)
+firework.html: $(demodir)/firework.c
+	$(CC) -I.. $(DEMOFLAGS) -o $@ $< $(LDFLAGS)
 
 newdemo.html: $(demodir)/newdemo.c
 	$(BUILD) $(DEMOFLAGS) -o $@ $< $(LDFLAGS)
