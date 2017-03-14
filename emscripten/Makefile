@@ -25,7 +25,7 @@ BUILD		= $(CC) $(CFLAGS) -I$(PDCURSES_SRCDIR)
 
 LINK		= $(CC)
 LDFLAGS	= --pre-js termlib.js $(LIBCURSES)
-LIBCURSES	= libpdcurses.so
+LIBCURSES	= libpdcurses.a
 
 # testcurs.html fails to build and tuidemo.html fails to run
 DEMOS		= firework.html newdemo.html ptest.html rain.html \
@@ -46,7 +46,7 @@ clean:
 demos:	$(DEMOS)
 
 $(LIBCURSES) : $(LIBOBJS) $(PDCOBJS)
-	$(CC) $(CFLAGS) -shared $^ -o $@
+	$(AR) rcs $@ $^
 
 $(LIBOBJS) $(PDCOBJS) : $(PDCURSES_HEADERS)
 $(PDCOBJS) : $(PDCURSES_SDL_H)
