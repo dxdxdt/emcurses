@@ -19,24 +19,25 @@ chtype acs_map[128] =
     A(28), A(29), A(30), A(31), ' ', '!', '"', '#', '$', '%', '&',
     '\'', '(', ')', '*',
 
-    A(0x1a), A(0x1b), A(0x18), A(0x19),
+    0x2192, 0x2190, 0x2191, 0x2193,
 
     '/',
 
-    0xdb,
+    0x2588,
 
     '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=',
     '>', '?', '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
     'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
     'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
 
-    A(0x04), 0xb1,
+    0x2666, 0x2592,
 
     'b', 'c', 'd', 'e',
 
-    0xf8, 0xf1, 0xb0, A(0x0f), 0xd9, 0xbf, 0xda, 0xc0, 0xc5, 0x2d,
-    0x2d, 0xc4, 0x2d, 0x5f, 0xc3, 0xb4, 0xc1, 0xc2, 0xb3, 0xf3,
-    0xf2, 0xe3, 0xd8, 0x9c, 0xf9,
+    0x00b0, 0x00b1, 0x2591, 0x00a4, 0x2518, 0x2510, 0x250c, 0x2514,
+    0x253c, 0x23ba, 0x23bb, 0x2500, 0x23bc, 0x23bd, 0x251c, 0x2524,
+    0x2534, 0x252c, 0x2502, 0x2264, 0x2265, 0x03c0, 0x2260, 0x00a3,
+    0x00b7,
 
     A(127)
 };
@@ -71,6 +72,10 @@ void PDC_transform_line(int lineno, int x, int len, const chtype *srcp)
 #ifdef CHTYPE_LONG
        if (ch & A_ALTCHARSET && !(ch & 0xff80))
            ch = (ch & (A_ATTRIBUTES ^ A_ALTCHARSET)) | acs_map[ch & 0x7f];
+#ifndef PDC_WIDE
+       else
+           ch &= ~0xFF00; /* Probably unnecessary */
+#endif
 #endif
        if (ch & A_REVERSE)
            style |= 1<<0;
@@ -94,6 +99,12 @@ void PDC_transform_line(int lineno, int x, int len, const chtype *srcp)
 
        EM_ASM_INT({
            term.setChar($0, $1, $2, $3);
-       }, ch & 0xFF, lineno, x+j, style);
+       },
+#ifdef CHTYPE_LONG
+       ch & 0xFFFF,
+#else
+       ch & 0xFF,
+#endif
+       lineno, x+j, style);
     }
 }
