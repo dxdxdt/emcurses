@@ -20,6 +20,7 @@ ifeq ($(DEBUG),Y)
 else
 	CFLAGS  = -O2 -Wall
 endif
+CFLAGS		+= -DPDC_RGB -DPDC_WIDE
 
 BUILD		= $(CC) $(CFLAGS) -I$(PDCURSES_SRCDIR)
 
