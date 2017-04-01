@@ -192,7 +192,7 @@ Defaults: {
 	bgColor:'#181818',
 	frameColor:'#555555',
 	frameWidth:1,
-	rowHeight:15,
+	rowHeight:0,
 	blinkDelay:500,
 	// css class
 	fontClass:'term',
@@ -1517,7 +1517,8 @@ _makeTerm: function(rebuild) {
 			tr=document.createElement('tr');
 			td=document.createElement('td');
 			td.id=divPrefix+r;
-			td.style.height=td.style.minHeight=td.style.maxHeight=this.conf.rowHeight;
+			if (this.conf.rowHeight)
+				td.style.height=td.style.minHeight=td.style.maxHeight=this.conf.rowHeight;
 			td.style.whiteSpace='nowrap';
 			td.className=this.conf.fontClass;
 			td.innerHTML=rstr;
@@ -1541,7 +1542,10 @@ _makeTerm: function(rebuild) {
 		for (var c=0; c<this.conf.cols; c++) rstr+='&nbsp;';
 		for (var r=0; r<this.conf.rows; r++) {
 			var termid=(this.globals.hasSubDivs)? '' : ' id="'+divPrefix+r+'"';
-			s+='<tr><td nowrap height="'+this.conf.rowHeight+'"'+termid+' class="'+this.conf.fontClass+'">'+rstr+'<\/td><\/tr>\n';
+			s+='<tr><td nowrap'
+			if (this.conf.rowHeight)
+				s+=' height="'+this.conf.rowHeight+'"'
+			s+=termid+' class="'+this.conf.fontClass+'">'+rstr+'<\/td><\/tr>\n';
 		}
 		s+='<\/table><\/td><\/tr>\n';
 		s+='<\/table><\/td><\/tr>\n';
