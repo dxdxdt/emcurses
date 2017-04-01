@@ -1647,20 +1647,19 @@ redraw: function(r) {
 				if (curStyle&st) s+=tsopn[st];
 			}
 			clr='';
-			if (curStyle & 0xff00) {
-				var cc=(curStyle & 0xff00)>>>8;
-				clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
-			}
-			else if (curStyle & 0xff0000) {
-				clr='#'+twclrs[(curStyle & 0xff0000)>>>16];
-			}
-			if (clr) {
-				if (curStyle&1) {
-					s+='<span style="background-color:'+clr+' !important;">';
+			if (curStyle & 0xffff00) {
+				s+='<span style="'
+				if (curStyle & 0xff00) {
+					var cc=(curStyle & 0xff00)>>>8;
+					clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
+					s+='color:'+clr+' !important;';
 				}
-				else {
-					s+='<span style="color:'+clr+' !important;">';
+				if (curStyle & 0xff0000) {
+					var cc=(curStyle & 0xff0000)>>>16;
+					clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
+					s+='background-color:'+clr+' !important;';
 				}
+				s+='">'
 			}
 		}
 		s+= (tspcl[c])? tspcl[c] : String.fromCharCode(c);

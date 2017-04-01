@@ -88,13 +88,8 @@ void PDC_transform_line(int lineno, int x, int len, const chtype *srcp)
            short fg, bg;
 
            PDC_pair_content(PAIR_NUMBER(ch & A_COLOR), &fg, &bg);
-           /* FIXME: bgcolor not properly supported */
-           if (bg) {
-               style |= (bg+1) << 8;
-               style |= 1<<0;
-           } else {
-               style |= (fg+1) << 8;
-           }
+           style |= (bg+1) << 16;
+           style |= (fg+1) << 8;
        }
 
        EM_ASM_INT({
