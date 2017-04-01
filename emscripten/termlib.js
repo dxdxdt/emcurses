@@ -887,7 +887,9 @@ printRowFromString: function(r,text,style) {
 
 setChar: function(ch,r,c,style) {
 	this.charBuf[r][c]=ch;
-	this.styleBuf[r][c]=(style)? style:0;
+	var usestyle=(style)? style:0;
+	this.styleBuf[r][c]=usestyle;
+	if (r==this.r && c==this.c) this.blinkBuffer=usestyle;
 	this.redraw(r);
 },
 
