@@ -1651,12 +1651,12 @@ redraw: function(r) {
 				s+='<span style="'
 				if (curStyle & 0xff00) {
 					var cc=(curStyle & 0xff00)>>>8;
-					clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
+					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
 					s+='color:'+clr+' !important;';
 				}
 				if (curStyle & 0xff0000) {
 					var cc=(curStyle & 0xff0000)>>>16;
-					clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
+					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
 					s+='background-color:'+clr+' !important;';
 				}
 				s+='">'
@@ -1785,45 +1785,48 @@ globals: {
 	webColorCodes: [''],
 
 	colors: {
-		// ANSI bright (bold) color set
 		black: 1,
-		red: 2,
-		green: 3,
-		yellow: 4,
-		blue: 5,
-		magenta: 6,
-		cyan: 7,
-		white: 8,
 		// dark color set
-		grey: 9,
-		red2: 10,
-		green2: 11,
-		yellow2: 12,
-		blue2: 13,
-		magenta2: 14,
-		cyan2: 15,
+		blue2: 2,
+		green2: 3,
+		cyan2: 4,
+		red2: 5,
+		magenta2: 6,
+		brown: 7,
+		gray: 8,
+		gray2: 9,
+		// ANSI bright (bold) color set
+		blue: 10,
+		green: 11,
+		cyan: 12,
+		red: 13,
+		magenta: 14,
+		yellow: 15,
+		white: 16,
 		// synonyms
-		red1: 2,
-		green1: 3,
-		yellow1: 4,
-		blue1: 5,
-		magenta1: 6,
-		cyan1: 7,
-		gray:  9,
-		darkred: 10,
-		darkgreen: 11,
-		darkyellow: 12,
-		darkblue: 13,
-		darkmagenta: 14,
-		darkcyan: 15,
+		darkblue: 2,
+		darkgreen: 3,
+		darkcyan: 4,
+		darkred: 5,
+		darkmagenta: 6,
+		gray1: 8,
+		darkgray: 9,
+		blue1: 10,
+		green1: 11,
+		cyan1: 12,
+		red1: 13,
+		magenta1: 14,
 		// default color
 		'default': 0,
 		clear: 0
 	},
 
 	colorCodes: [
-		'', '#000000', '#ff0000', '#00ff00', '#ffff00', '#0066ff', '#ff00ff', '#00ffff', '#ffffff',
-		'#808080', '#990000', '#009900', '#999900', '#003399', '#990099', '#009999'
+		'',
+		'#000000', '#0000aa', '#00aa00', '#00aaaa',
+		'#aa0000', '#aa00aa', '#aa5500', '#aaaaaa',
+		'#555555', '#5555ff', '#55ff55', '#55ffff',
+		'#ff5555', '#ff55ff', '#ffff55', '#ffffff'
 	],
 
 	nsColors: {

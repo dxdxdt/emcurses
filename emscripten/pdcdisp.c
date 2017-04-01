@@ -81,15 +81,24 @@ void PDC_transform_line(int lineno, int x, int len, const chtype *srcp)
            style |= 1<<0;
        if (ch & A_UNDERLINE)
            style |= 1<<1;
-       if (ch & A_BOLD)
-           style |= 1<<4;
 
        if (ch & A_COLOR) {
            short fg, bg;
 
            PDC_pair_content(PAIR_NUMBER(ch & A_COLOR), &fg, &bg);
+#ifdef PDC_RGB
+           static const unsigned char rgbtab[] = {
+               0, 4, 2, 6, 1, 5, 3, 7, 8, 12, 10, 14, 9, 13, 11, 15
+           };
+           if (fg < sizeof(rgbtab)) fg = rgbtab[fg];
+           if (bg < sizeof(rgbtab)) bg = rgbtab[bg];
+#endif
+           if (ch & A_BOLD)
+               fg += 8;
            style |= (bg+1) << 16;
            style |= (fg+1) << 8;
+       } else if (ch & A_BOLD) {
+           style |= 1<<4;
        }
 
        EM_ASM_INT({
