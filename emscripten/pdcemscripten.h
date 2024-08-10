@@ -5,8 +5,8 @@
 #ifndef PDCEMSCRIPTEN_H
 #define PDCEMSCRIPTEN_H
 
+#include <emscripten.h>
 #include <curspriv.h>
 
-#include <emscripten.h>
 
 #endif

@@ -157,12 +157,14 @@ bool PDC_can_change_color(void)
 
 int PDC_color_content(short color, short *red, short *green, short *blue)
 {
-    char str[8];
+    char *str;
     int r, g, b;
 
-    asm("TermGlobals.getColorString(%0);"
-       :"=r"(str) :"r"(color));
+    str = EM_ASM_PTR({
+        return stringToNewUTF8(TermGlobals.getColorString($0));
+    }, color);
     sscanf(str, "#%02x%02x%02x", &r, &g, &b);
+    free(str);
 
     *red = DIVROUND(r * 1000, 255);
     *green = DIVROUND(g * 1000, 255);
@@ -180,8 +182,9 @@ int PDC_init_color(short color, short red, short green, short blue)
     int b = DIVROUND(blue * 255, 1000);
 
     sprintf(str, "#%02x%02x%02x", r, g, b);
-    asm("TermGlobals.setColor(%0, %1);"
-       ::"r"(color), "r"(str));
+    EM_ASM({
+        TermGlobals.setColor($0, $1);
+    }, color, str);
 
     wrefresh(curscr);
 

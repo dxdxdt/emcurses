@@ -82,6 +82,9 @@ extern "C"
  *
  */
 
+#ifdef bool
+#undef bool
+#endif
 typedef unsigned char bool;    /* PDCurses Boolean type */
 
 #ifdef CHTYPE_LONG
