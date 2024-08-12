@@ -1,7 +1,7 @@
 /*
-  termlib.js - JS-WebTerminal Object v1.66
+  termlib.js - JS-WebTerminal Object v1.63
 
-  (c) Norbert Landsteiner 2003-2015
+  (c) Norbert Landsteiner 2003-2013
   mass:werk - media environments
   <http://www.masswerk.at/termlib/>
 
@@ -162,8 +162,6 @@
                 Added input mode "fieldMode"
   version 1.61  Changes to defaults implementation of the constructor.
   version 1.62  Fixed a bug related to AltGr-sequences with IE8+.
-  version 1.65  Added options for textColor and textBlur.
-  version 1.66  textBlur accepts also an array of values for multiple text-shadows.
 
 */
 
@@ -181,7 +179,7 @@ var Terminal = function(conf) {
 Terminal.prototype = {
 // prototype definitions (save some 2k on indentation)
 
-version: '1.66 (original)',
+version: '1.62 (original)',
 
 Defaults: {
 	// dimensions
@@ -194,7 +192,7 @@ Defaults: {
 	bgColor:'#181818',
 	frameColor:'#555555',
 	frameWidth:1,
-	rowHeight:15,
+	rowHeight:0,
 	blinkDelay:500,
 	// css class
 	fontClass:'term',
@@ -221,9 +219,7 @@ Defaults: {
 	exitHandler:null,
 	wrapping:false,
 	mapANSI:false,
-	ANSItrueBlack:false,
-	textBlur: 0,
-	textColor: ''
+	ANSItrueBlack:false
 },
 
 setInitValues: function() {
@@ -276,19 +272,6 @@ setInitValues: function() {
 	this.exitHandler=this.conf.exitHandler;
 	this.fieldMode=false;
 	this.fieldStart=this.fieldEnd=this.fieldC=0;
-	if (typeof this.conf.textBlur === 'object' && this.conf.textBlur.length) {
-		var a=[];
-		for (var i=0; i<this.conf.textBlur.length; i++) {
-			var b=Number(this.conf.textBlur[i]);
-			if (!isNaN(b) && b>0) a.push(b);
-		}
-		this.textBlur=(a.length)? a:0;
-	}
-	else {
-		this.textBlur=Number(this.conf.textBlur);
-		if (isNaN(this.textBlur) || this.textBlur<0 || this.textBlur>40) this.textBlur=0;
-	}
-	this.textColor=this.conf.textColor || '';
 },
 
 defaultHandler: function() {
@@ -368,40 +351,6 @@ wrapOn: function() {
 
 wrapOff: function() {
 	this.wrapping=false;
-},
-
-setTextBlur: function(v) {
-	var rerender=false;
-	if (typeof v === 'object' && v.length) {
-		var a=[];
-		for (var i=0; i<v.length; i++) {
-			var b=Number(v[i]);
-			if (!isNaN(b) && b>0) a.push(b);
-		}
-		this.textBlur=(a.length)? a:0;
-		rerender=true;
-	}
-	else {
-		v=Number(v);
-		if (isNaN(v) || v<0 || v>40) v=0;
-		if (v!=this.textBlur) {
-			this.textBlur=v;
-			rerender=true;
-		}
-	}
-	if (rerender) {
-		for (var r=0, l=this.conf.rows; r<l; r++) this.redraw(r);
-	}
-},
-
-setTextColor: function(v) {
-	if (!v) v='';
-	if (v!=this.textColor) {
-		this.textColor=v;
-		for (var r=0, l=this.conf.rows; r<l; r++) {
-			this.redraw(r);
-		}
-	}
 },
 
 // main output methods
@@ -938,7 +887,9 @@ printRowFromString: function(r,text,style) {
 
 setChar: function(ch,r,c,style) {
 	this.charBuf[r][c]=ch;
-	this.styleBuf[r][c]=(style)? style:0;
+	var usestyle=(style)? style:0;
+	this.styleBuf[r][c]=usestyle;
+	if (r==this.r && c==this.c) this.blinkBuffer=usestyle;
 	this.redraw(r);
 },
 
@@ -1566,7 +1517,8 @@ _makeTerm: function(rebuild) {
 			tr=document.createElement('tr');
 			td=document.createElement('td');
 			td.id=divPrefix+r;
-			td.style.height=td.style.minHeight=td.style.maxHeight=this.conf.rowHeight;
+			if (this.conf.rowHeight)
+				td.style.height=td.style.minHeight=td.style.maxHeight=this.conf.rowHeight;
 			td.style.whiteSpace='nowrap';
 			td.className=this.conf.fontClass;
 			td.innerHTML=rstr;
@@ -1590,7 +1542,10 @@ _makeTerm: function(rebuild) {
 		for (var c=0; c<this.conf.cols; c++) rstr+='&nbsp;';
 		for (var r=0; r<this.conf.rows; r++) {
 			var termid=(this.globals.hasSubDivs)? '' : ' id="'+divPrefix+r+'"';
-			s+='<tr><td nowrap height="'+this.conf.rowHeight+'"'+termid+' class="'+this.conf.fontClass+'">'+rstr+'<\/td><\/tr>\n';
+			s+='<tr><td nowrap'
+			if (this.conf.rowHeight)
+				s+=' height="'+this.conf.rowHeight+'"'
+			s+=termid+' class="'+this.conf.fontClass+'">'+rstr+'<\/td><\/tr>\n';
 		}
 		s+='<\/table><\/td><\/tr>\n';
 		s+='<\/table><\/td><\/tr>\n';
@@ -1680,13 +1635,11 @@ redraw: function(r) {
 	var twclrs=this.globals.webColorCodes;
 	var t_cb=this.charBuf;
 	var t_sb=this.styleBuf;
-	var blur=this.textBlur;
-	var clr='';
-	var textColor=this.textColor || '';
+	var clr;
 	for (var i=0; i<this.conf.cols; i++) {
 		var c=t_cb[r][i];
 		var cs=t_sb[r][i];
-		if (cs!=curStyle || (i==0 && textColor)) {
+		if (cs!=curStyle) {
 			if (curStyle) {
 				if (curStyle & 0xffff00) s+='</span>';
 				for (var k=tstls.length-1; k>=0; k--) {
@@ -1699,27 +1652,20 @@ redraw: function(r) {
 				var st=tstls[k];
 				if (curStyle&st) s+=tsopn[st];
 			}
-			clr=textColor;
-			if (curStyle & 0xff00) {
-				var cc=(curStyle & 0xff00)>>>8;
-				clr= (cc<16)? tclrs[cc] : '#'+tnclrs[cc-16];
-			}
-			else if (curStyle & 0xff0000) {
-				clr='#'+twclrs[(curStyle & 0xff0000)>>>16];
-			}
-			if (clr) {
-				if (curStyle&1) {
-					s+='<span style="background-color:'+clr+' !important;">';
+			clr='';
+			if (curStyle & 0xffff00) {
+				s+='<span style="'
+				if (curStyle & 0xff00) {
+					var cc=(curStyle & 0xff00)>>>8;
+					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
+					s+='color:'+clr+' !important;';
 				}
-				else if (typeof blur === 'object') {
-					s+='<span style="color:'+clr+' !important; text-shadow: 0 0 '+blur.join('px '+clr+', 0 0 ')+'px '+clr+';">';
+				if (curStyle & 0xff0000) {
+					var cc=(curStyle & 0xff0000)>>>16;
+					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
+					s+='background-color:'+clr+' !important;';
 				}
-				else if (blur) {
-					 s+='<span style="color:'+clr+' !important; text-shadow: 0 0 '+blur+'px '+clr+';">';
-				}
-				else {
-					s+='<span style="color:'+clr+' !important;">';
-				}
+				s+='">'
 			}
 		}
 		s+= (tspcl[c])? tspcl[c] : String.fromCharCode(c);
@@ -1845,45 +1791,48 @@ globals: {
 	webColorCodes: [''],
 
 	colors: {
-		// ANSI bright (bold) color set
 		black: 1,
-		red: 2,
-		green: 3,
-		yellow: 4,
-		blue: 5,
-		magenta: 6,
-		cyan: 7,
-		white: 8,
 		// dark color set
-		grey: 9,
-		red2: 10,
-		green2: 11,
-		yellow2: 12,
-		blue2: 13,
-		magenta2: 14,
-		cyan2: 15,
+		blue2: 2,
+		green2: 3,
+		cyan2: 4,
+		red2: 5,
+		magenta2: 6,
+		brown: 7,
+		gray: 8,
+		gray2: 9,
+		// ANSI bright (bold) color set
+		blue: 10,
+		green: 11,
+		cyan: 12,
+		red: 13,
+		magenta: 14,
+		yellow: 15,
+		white: 16,
 		// synonyms
-		red1: 2,
-		green1: 3,
-		yellow1: 4,
-		blue1: 5,
-		magenta1: 6,
-		cyan1: 7,
-		gray:  9,
-		darkred: 10,
-		darkgreen: 11,
-		darkyellow: 12,
-		darkblue: 13,
-		darkmagenta: 14,
-		darkcyan: 15,
+		darkblue: 2,
+		darkgreen: 3,
+		darkcyan: 4,
+		darkred: 5,
+		darkmagenta: 6,
+		gray1: 8,
+		darkgray: 9,
+		blue1: 10,
+		green1: 11,
+		cyan1: 12,
+		red1: 13,
+		magenta1: 14,
 		// default color
 		'default': 0,
 		clear: 0
 	},
 
 	colorCodes: [
-		'', '#000000', '#ff0000', '#00ff00', '#ffff00', '#0066ff', '#ff00ff', '#00ffff', '#ffffff',
-		'#808080', '#990000', '#009900', '#999900', '#003399', '#990099', '#009999'
+		'',
+		'#000000', '#0000aa', '#00aa00', '#00aaaa',
+		'#aa0000', '#aa00aa', '#aa5500', '#aaaaaa',
+		'#555555', '#5555ff', '#55ff55', '#55ffff',
+		'#ff5555', '#ff55ff', '#ffff55', '#ffffff'
 	],
 
 	nsColors: {
@@ -2477,6 +2426,8 @@ globals: {
 		}
 		// key actions
 		if (term.charMode) {
+			if (ctrl && term.isPrintable(ch,true))
+				ch = String.fromCharCode(ch).toUpperCase().charCodeAt(0) & ~0x40;
 			term.insert=false;
 			term.inputChar=ch;
 			term.lineBuffer='';
