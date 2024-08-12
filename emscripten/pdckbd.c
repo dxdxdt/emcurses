@@ -22,6 +22,8 @@ RCSID("$Id: pdckbd.c,v 1.20 2008/07/14 04:24:52 wmcbrine Exp $")
 
 #include <string.h>
 
+unsigned long pdc_key_modifiers = 0L;
+
 unsigned long PDC_get_input_fd(void)
 {
     PDC_LOG(("PDC_get_input_fd() - called\n"));
