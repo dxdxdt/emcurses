@@ -5,6 +5,7 @@
 RCSID("$Id: pdcclip.c,v 1.6 2008/07/14 04:24:52 wmcbrine Exp $")
 
 #include <stdlib.h>
+#include <string.h>
 
 /*man-start**************************************************************
 
@@ -47,31 +48,78 @@ RCSID("$Id: pdcclip.c,v 1.6 2008/07/14 04:24:52 wmcbrine Exp $")
 
 int PDC_getclipboard(char **contents, long *length)
 {
+    char *str;
+    size_t len;
+
     PDC_LOG(("PDC_getclipboard() - called\n"));
 
-    /* FIXME */
-    return PDC_CLIP_ACCESS_ERROR;
+    str = EM_ASM_PTR({
+        try {
+            return stringToNewUTF8(await navigator.clipboard.readText());
+        }
+        catch (e) {
+            return null;
+        }
+    });
+
+    if (str == NULL) {
+        return PDC_CLIP_ACCESS_ERROR;
+    }
+
+    len = strlen(str);
+    if (len == 0) {
+        free(str);
+        return PDC_CLIP_EMPTY;
+    }
+
+    *contents = str;
+    *length = (long)len;
+    return PDC_CLIP_SUCCESS;
 }
 
 int PDC_setclipboard(const char *contents, long length)
 {
+    int ret;
+
     PDC_LOG(("PDC_setclipboard() - called\n"));
 
-    /* FIXME */
-    return PDC_CLIP_ACCESS_ERROR;
+    ret = EM_ASM_INT({
+        try {
+            await navigator.clipboard.writeText($0);
+            return 1;
+        }
+        catch (e) {
+            return 0;
+        }
+    }, contents);
+
+    return ret ? PDC_CLIP_SUCCESS : PDC_CLIP_ACCESS_ERROR;
 }
 
 int PDC_freeclipboard(char *contents)
 {
     PDC_LOG(("PDC_freeclipboard() - called\n"));
 
-    /* FIXME */
-    return PDC_CLIP_ACCESS_ERROR;
+    free(contents);
+
+    return PDC_CLIP_SUCCESS;
 }
 
 int PDC_clearclipboard(void)
 {
+    int ret;
+
     PDC_LOG(("PDC_clearclipboard() - called\n"));
 
-    return PDC_CLIP_ACCESS_ERROR;
+    ret = EM_ASM_INT({
+        try {
+            await navigator.clipboard.writeText("");
+            return 1;
+        }
+        catch (e) {
+            return 0;
+        }
+    });
+
+    return ret ? PDC_CLIP_SUCCESS : PDC_CLIP_ACCESS_ERROR;
 }

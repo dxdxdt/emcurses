@@ -9,30 +9,92 @@ RCSID("$Id: pdcutil.c,v 1.6 2008/07/14 04:24:52 wmcbrine Exp $")
 void PDC_beep(void)
 {
     PDC_LOG(("PDC_beep() - called\n"));
-    EM_ASM((() => {
+    EM_ASM((function () {
         let started = false;
 
+        if (!this.emcurses_beep) {
+            this.emcurses_beep = {
+                ctx: null,
+                os: null,
+                playing: false,
+                queue: 0
+            };
+        }
+
+        // I know it's aesthetically challenged!
         try {
-            var context = new AudioContext();
-            var oscillator = context.createOscillator();
+            if (this.emcurses_beep.playing) {
+                if (this.emcurses_beep.queue < 10) {
+                    this.emcurses_beep.queue += 1;
+                }
+            }
+            else {
+                this.emcurses_beep.ctx = new AudioContext();
+                os = this.emcurses_beep.os = this.emcurses_beep.ctx.createOscillator();
 
-            oscillator.type = "sine";
-            oscillator.frequency.value = 1000;
-            oscillator.connect(context.destination);
-            oscillator.start();
-            started = true;
+                this.emcurses_beep.os.type = "sine";
+                this.emcurses_beep.os.frequency.value = 1000;
+                this.emcurses_beep.os.connect(
+                    this.emcurses_beep.ctx.destination);
+                this.emcurses_beep.os.start();
+                this.emcurses_beep.playing = started = true;
 
-            setTimeout(function () {
-                oscillator.stop();
-                context.close();
-            }, 100);
+                function atend () {
+                    this.emcurses_beep.os.stop();
+
+                    setTimeout(function () {
+                        if (this.emcurses_beep.queue > 0) {
+                            let started = false;
+
+                            try {
+                                this.emcurses_beep.queue -= 1;
+                                this.emcurses_beep.os =
+                                    this.emcurses_beep.ctx.createOscillator();
+                                this.emcurses_beep.os.type = "sine";
+                                this.emcurses_beep.os.frequency.value = 1000;
+                                this.emcurses_beep.os.connect(
+                                    this.emcurses_beep.ctx.destination);
+                                this.emcurses_beep.os.start();
+                                started = true;
+                                setTimeout(atend, 200);
+                            }
+                            catch (e) {
+                                // don't want the sound to stuck
+                                console.error(e);
+
+                                if (started) {
+                                    this.emcurses_beep.os.stop();
+                                    this.emcurses_beep.ctx.close();
+                                }
+                                this.emcurses_beep.ctx = null;
+                                this.emcurses_beep.os = null;
+                                this.emcurses_beep.playing = false;
+                                this.emcurses_beep.queue = 0;
+                            }
+                        }
+                        else {
+                            this.emcurses_beep.ctx.close();
+                            this.emcurses_beep.ctx = null;
+                            this.emcurses_beep.os = null;
+                            this.emcurses_beep.playing = false;
+                        }
+                    }, 200);
+                }
+
+                setTimeout(atend, 200);
+            }
         }
         catch (e) {
             console.error(e);
             if (started) {
                 // don't want the sound to stuck
-                oscillator.stop();
+                this.emcurses_beep.os.stop();
+                this.emcurses_beep.ctx.close();
             }
+            this.emcurses_beep.ctx = null;
+            this.emcurses_beep.os = null;
+            this.emcurses_beep.playing = false;
+            this.emcurses_beep.queue = 0;
         }
     })());
 }
