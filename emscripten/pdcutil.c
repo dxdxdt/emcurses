@@ -9,7 +9,32 @@ RCSID("$Id: pdcutil.c,v 1.6 2008/07/14 04:24:52 wmcbrine Exp $")
 void PDC_beep(void)
 {
     PDC_LOG(("PDC_beep() - called\n"));
-    /* FIXME */
+    EM_ASM((() => {
+        let started = false;
+
+        try {
+            var context = new AudioContext();
+            var oscillator = context.createOscillator();
+
+            oscillator.type = "sine";
+            oscillator.frequency.value = 1000;
+            oscillator.connect(context.destination);
+            oscillator.start();
+            started = true;
+
+            setTimeout(function () {
+                oscillator.stop();
+                context.close();
+            }, 100);
+        }
+        catch (e) {
+            console.error(e);
+            if (started) {
+                // don't want the sound to stuck
+                oscillator.stop();
+            }
+        }
+    })());
 }
 
 void PDC_napms(int ms)
