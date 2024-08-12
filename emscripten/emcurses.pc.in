@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: emcurses
+Description: Curses library for emscripten target
+Version: @EMCURSES_VERSION@
+URL: https://github.com/rhaberkorn/emcurses
+# Leave it up to users. Embedding the library can be wasteful there are more
+# than one wasm using termlib.
+#Libs: --pre-js ${libdir}/emcurses/termlib.js
+Libs: -lemcurses
+Cflags: -I${includedir}
