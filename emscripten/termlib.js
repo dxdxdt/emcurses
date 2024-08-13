@@ -289,6 +289,7 @@ setInitValues: function() {
 		if (isNaN(this.textBlur) || this.textBlur<0 || this.textBlur>40) this.textBlur=0;
 	}
 	this.textColor=this.conf.textColor || '';
+	this.contentEditable = null;
 },
 
 defaultHandler: function() {
@@ -1578,6 +1579,7 @@ _makeTerm: function(rebuild) {
 		}
 		ptd.appendChild(table2);
 		node=document.getElementById(this.termDiv);
+		this.contentEditable=node.contentEditable;
 		while (node.hasChildNodes()) node.removeChild(node.firstChild);
 		node.appendChild(table);
 	}
@@ -2306,12 +2308,28 @@ globals: {
 		}
 	},
 
+	isBeforeInputEventAvailable: function () {
+		return (
+			window.InputEvent &&
+			typeof InputEvent.prototype.getTargetRanges === "function"
+		);
+	},
+
 	enableKeyboard: function(term) {
 		var tg=Terminal.prototype.globals;
 		if (!tg.kbdEnabled) {
-			tg.registerEvent(document, 'keypress', tg.keyHandler, true);
-			tg.registerEvent(document, 'keydown', tg.keyFix, true);
-			tg.registerEvent(document, 'keyup', tg.clearRepeatTimer, true);
+			if (tg.isBeforeInputEventAvailable() &&
+				[ "true", "on" ].includes(term.contentEditable))
+			{
+				tg.registerEvent(document, 'beforeinput', tg.keyBI, true);
+				tg.registerEvent(document, 'keydown', tg.keyFix, true);
+				tg.registerEvent(document, 'keyup', tg.clearRepeatTimer, true);
+			}
+			else {
+				tg.registerEvent(document, 'keypress', tg.keyHandler, true);
+				tg.registerEvent(document, 'keydown', tg.keyFix, true);
+				tg.registerEvent(document, 'keyup', tg.clearRepeatTimer, true);
+			}
 			tg.kbdEnabled=true;
 		}
 		tg.activeTerm=term;
@@ -2323,9 +2341,32 @@ globals: {
 			tg.releaseEvent(document, 'keypress', tg.keyHandler, true);
 			tg.releaseEvent(document, 'keydown', tg.keyFix, true);
 			tg.releaseEvent(document, 'keyup', tg.clearRepeatTimer, true);
+			tg.releaseEvent(document, 'beforeinput', tg.keyBI, true);
 			tg.kbdEnabled=false;
 		}
 		tg.activeTerm=null;
+	},
+
+	keyBI: function (e) {
+		var tg=Terminal.prototype.globals;
+		var text=e.data;
+
+		if (e.isComposing ||
+			![ "insertText", "insertCompositionText" ].includes(e.inputType))
+		{
+			return false;
+		}
+
+		for (var i=0; i<text.length; i++) {
+			tg.keyHandler({which: text.charCodeAt(i), _remapped:true});
+		}
+		// As of 2024, major browsers do not implement cancelation of
+		// composition events. As a result, CJK text input cannot be prevented.
+		e.preventDefault();
+		e.stopPropagation();
+		e.cancelBubble=true;
+
+		return true;
 	},
 
 	// remap some special key mappings on keydown
