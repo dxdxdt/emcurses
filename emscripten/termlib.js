@@ -1,7 +1,7 @@
 /*
-  termlib.js - JS-WebTerminal Object v1.63
+  termlib.js - JS-WebTerminal Object v1.66
 
-  (c) Norbert Landsteiner 2003-2013
+  (c) Norbert Landsteiner 2003-2015
   mass:werk - media environments
   <http://www.masswerk.at/termlib/>
 
@@ -162,6 +162,8 @@
                 Added input mode "fieldMode"
   version 1.61  Changes to defaults implementation of the constructor.
   version 1.62  Fixed a bug related to AltGr-sequences with IE8+.
+  version 1.65  Added options for textColor and textBlur.
+  version 1.66  textBlur accepts also an array of values for multiple text-shadows.
 
 */
 
@@ -179,7 +181,7 @@ var Terminal = function(conf) {
 Terminal.prototype = {
 // prototype definitions (save some 2k on indentation)
 
-version: '1.62 (original)',
+version: '1.66 (original)',
 
 Defaults: {
 	// dimensions
@@ -219,7 +221,9 @@ Defaults: {
 	exitHandler:null,
 	wrapping:false,
 	mapANSI:false,
-	ANSItrueBlack:false
+	ANSItrueBlack:false,
+	textBlur: 0,
+	textColor: ''
 },
 
 setInitValues: function() {
@@ -272,6 +276,19 @@ setInitValues: function() {
 	this.exitHandler=this.conf.exitHandler;
 	this.fieldMode=false;
 	this.fieldStart=this.fieldEnd=this.fieldC=0;
+	if (typeof this.conf.textBlur === 'object' && this.conf.textBlur.length) {
+		var a=[];
+		for (var i=0; i<this.conf.textBlur.length; i++) {
+			var b=Number(this.conf.textBlur[i]);
+			if (!isNaN(b) && b>0) a.push(b);
+		}
+		this.textBlur=(a.length)? a:0;
+	}
+	else {
+		this.textBlur=Number(this.conf.textBlur);
+		if (isNaN(this.textBlur) || this.textBlur<0 || this.textBlur>40) this.textBlur=0;
+	}
+	this.textColor=this.conf.textColor || '';
 },
 
 defaultHandler: function() {
@@ -351,6 +368,40 @@ wrapOn: function() {
 
 wrapOff: function() {
 	this.wrapping=false;
+},
+
+setTextBlur: function(v) {
+	var rerender=false;
+	if (typeof v === 'object' && v.length) {
+		var a=[];
+		for (var i=0; i<v.length; i++) {
+			var b=Number(v[i]);
+			if (!isNaN(b) && b>0) a.push(b);
+		}
+		this.textBlur=(a.length)? a:0;
+		rerender=true;
+	}
+	else {
+		v=Number(v);
+		if (isNaN(v) || v<0 || v>40) v=0;
+		if (v!=this.textBlur) {
+			this.textBlur=v;
+			rerender=true;
+		}
+	}
+	if (rerender) {
+		for (var r=0, l=this.conf.rows; r<l; r++) this.redraw(r);
+	}
+},
+
+setTextColor: function(v) {
+	if (!v) v='';
+	if (v!=this.textColor) {
+		this.textColor=v;
+		for (var r=0, l=this.conf.rows; r<l; r++) {
+			this.redraw(r);
+		}
+	}
 },
 
 // main output methods
@@ -1635,11 +1686,13 @@ redraw: function(r) {
 	var twclrs=this.globals.webColorCodes;
 	var t_cb=this.charBuf;
 	var t_sb=this.styleBuf;
-	var clr;
+	var blur=this.textBlur;
+	var clr='';
+	var textColor=this.textColor || '';
 	for (var i=0; i<this.conf.cols; i++) {
 		var c=t_cb[r][i];
 		var cs=t_sb[r][i];
-		if (cs!=curStyle) {
+		if (cs!=curStyle || (i==0 && textColor)) {
 			if (curStyle) {
 				if (curStyle & 0xffff00) s+='</span>';
 				for (var k=tstls.length-1; k>=0; k--) {
@@ -1652,7 +1705,7 @@ redraw: function(r) {
 				var st=tstls[k];
 				if (curStyle&st) s+=tsopn[st];
 			}
-			clr='';
+			clr=textColor;
 			if (curStyle & 0xffff00) {
 				s+='<span style="'
 				if (curStyle & 0xff00) {
@@ -1660,11 +1713,17 @@ redraw: function(r) {
 					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
 					s+='color:'+clr+' !important;';
 				}
+				else if (typeof blur === 'object') {
+					s+='<span style="color:'+clr+' !important; text-shadow: 0 0 '+blur.join('px '+clr+', 0 0 ')+'px '+clr+';">';
+				}
+				else if (blur) {
+					 s+='<span style="color:'+clr+' !important; text-shadow: 0 0 '+blur+'px '+clr+';">';
+				}
 				if (curStyle & 0xff0000) {
 					var cc=(curStyle & 0xff0000)>>>16;
 					clr= (cc<17)? tclrs[cc] : '#'+tnclrs[cc-16];
 					s+='background-color:'+clr+' !important;';
-				}
+ 				}
 				s+='">'
 			}
 		}
@@ -2426,8 +2485,6 @@ globals: {
 		}
 		// key actions
 		if (term.charMode) {
-			if (ctrl && term.isPrintable(ch,true))
-				ch = String.fromCharCode(ch).toUpperCase().charCodeAt(0) & ~0x40;
 			term.insert=false;
 			term.inputChar=ch;
 			term.lineBuffer='';
